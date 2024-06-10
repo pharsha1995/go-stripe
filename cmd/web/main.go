@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"html/template"
 	"log/slog"
 	"os"
 )
@@ -14,8 +15,9 @@ type config struct {
 
 // application stores all the dependencies handlers, middleware etc  in application needs
 type application struct {
-	config config
-	logger *slog.Logger // structured logger for all logging needs of application
+	config        config
+	logger        *slog.Logger // structured logger for all logging needs of application
+	templateCache map[string]*template.Template
 }
 
 func main() {
@@ -28,12 +30,19 @@ func main() {
 
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
-	app := &application{
-		config: cfg,
-		logger: logger,
+	templateCache, err := newTemplateCache()
+	if err != nil {
+		logger.Error(err.Error())
+		os.Exit(1)
 	}
 
-	err := app.serve()
+	app := &application{
+		config:        cfg,
+		logger:        logger,
+		templateCache: templateCache,
+	}
+
+	err = app.serve()
 	if err != nil {
 		logger.Error(err.Error())
 		os.Exit(1)
